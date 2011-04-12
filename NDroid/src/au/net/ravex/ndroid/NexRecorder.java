@@ -17,20 +17,21 @@ import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceView;
 import android.widget.ImageView;
 
 /**
  * Based on tutorial online
  *
- * @author James Hornitzky, <a href="http://www.benmccann.com">Ben McCann</a>
+ * @author James Hornitzky based on <a href="http://www.benmccann.com">Ben McCann</a>
  */
 public class NexRecorder {
-	private Surface surface;
-
-	private static final String TAG = NexRecorder.class.getName();
-	final MediaRecorder recorder = new MediaRecorder();
-	private String path;
+	private Surface surface; //dummy service for picture taking
+	private static final String TAG = NexRecorder.class.getName(); //for logging
+	final MediaRecorder recorder = new MediaRecorder(); //technically dont need this
+	private String path; //path to output file
 	private Camera camera;
+	private boolean shouldRun = false;
 
 	/**
 	 * Self explanatory
@@ -47,17 +48,28 @@ public class NexRecorder {
 		return Environment.getExternalStorageDirectory().getAbsolutePath()
 				+ path;
 	}
-
+	
 	/**
-	 * Starts a new recording.
+	 * make sure the SDCard is mounted before starting
+	 * @throws IOException
 	 */
-	public void start() throws IOException {
+	private void checkForSDCard() throws IOException {
 		String state = android.os.Environment.getExternalStorageState();
 		if (!state.equals(android.os.Environment.MEDIA_MOUNTED)) {
 			throw new IOException("SD Card is not mounted.  It is " + state
 					+ ".");
 		}
-
+	}
+	
+	/**
+	 * Start the media recorder (audio/video)
+	 * @throws IOException
+	 */
+	public void startMedia() throws IOException {
+		checkForSDCard();
+		
+		Log.d(TAG, "Starting recorder");
+		
 		//Create a randomized filename based on milliseconds since epoch
 		Log.d(TAG, "Creating file name");
 		long mills = new Date().getTime();
@@ -68,14 +80,11 @@ public class NexRecorder {
 		if (!directory.exists() && !directory.mkdirs()) {
 			throw new IOException("Path to file could not be created.");
 		}
-
-		Log.d(TAG, "Starting recorder");
 		
- 		Log.i(TAG, "Opening camera");
-		camera = Camera.open();
-		camera.takePicture(shutterCallback, rawCallback, jpegCallback); //try take a pciture by iteself
-		/*
-		//FIXME cameras
+		//Now start background recording
+		/* 
+		//FIXME camera recording
+		 
 		recorder.setCamera(camera);
 		recorder.setVideoSource(MediaRecorder.VideoSource.DEFAULT);
 		recorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
@@ -90,6 +99,56 @@ public class NexRecorder {
 		recorder.start();
 	}
 	
+	/**
+	 * Stops a recording that has been previously started.
+	 */
+	public void stopMedia() throws IOException {
+		try {
+			recorder.stop();
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		}
+		recorder.release();
+	}
+	
+	
+	public void startTakingPictures() throws IOException {
+		takePicture();
+	}
+	
+	public void takePicture() throws IOException {
+		Log.i(TAG, "Entered take picture");
+		checkForSDCard();
+		
+		Log.i(TAG, "LookAtCamera");
+		//camera = Camera.open();
+		if (camera == null) {
+			Log.i(TAG, "Opening camera");
+			camera = Camera.open();
+		}
+		
+		//Create a dummy view and context
+		Log.i(TAG, "createSurface");
+		SurfaceView view = new SurfaceView(new DummyContext());
+		Log.i(TAG, "goingToSetPreviewDisplay");
+		camera.setPreviewDisplay(view.getHolder());
+		Log.i(TAG, "goingToStartPreview");
+		camera.startPreview();
+		
+		//wait
+		Log.i(TAG, "Wait for cam");
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			Log.e(TAG, "Woken violently");
+			e.printStackTrace();
+		}
+		
+		//take pic
+		Log.i(TAG, "Take pic");
+		camera.takePicture(shutterCallback, rawCallback, jpegCallback); //try take a pciture by iteself
+	}
+	
 	// Called when shutter is opened
 	ShutterCallback shutterCallback = new ShutterCallback() { // <6>
 		public void onShutter() {
@@ -101,12 +160,14 @@ public class NexRecorder {
 	PictureCallback rawCallback = new PictureCallback() { // <7>
 		public void onPictureTaken(byte[] data, Camera camera) {
 			Log.d(TAG, "onPictureTaken - raw");
+			
 		}
 	};
 	
 	// Handles data for jpeg picture
 	PictureCallback jpegCallback = new PictureCallback() { // <8>
 		public void onPictureTaken(byte[] data, Camera camera) {
+			Log.i(TAG, "onPictureTakenStart");
 			FileOutputStream outStream = null;
 			try {
 				// Write to SD Card
@@ -120,21 +181,31 @@ public class NexRecorder {
 			} catch (IOException e) {
 				e.printStackTrace();
 			} finally {
-				camera.release();
+				camera.stopPreview();
+				//camera.release();
 			}
-			Log.d(TAG, "onPictureTaken - jpeg");
+			Log.d(TAG, "onPictureTakenFinish - jpeg written");
+			
+			/*
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} 
+			*/
+			
+			//Then repeat the picture process
+			try {
+				takePicture();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
 	};
-
-	/**
-	 * Stops a recording that has been previously started.
-	 */
-	public void stop() throws IOException {
-		try {
-			recorder.stop();
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage());
+	
+	public void cleanup() {
+		if (camera != null) {
+			camera.release();
 		}
-		recorder.release();
 	}
 }

@@ -12,6 +12,7 @@ import android.widget.Button;
 public class NdroidMain extends Activity implements OnClickListener {
 	private static final String TAG = "Ndroid";
 	Button buttonStart, buttonStop;
+	boolean startedService = false;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -35,12 +36,16 @@ public class NdroidMain extends Activity implements OnClickListener {
 	public void onClick(View src) {
 		switch (src.getId()) {
 		case R.id.buttonStart:
-			Log.d(TAG, "onClick: starting srvice");
-			startService(new Intent(this, Nexsight.class));
+			Log.d(TAG, "starting nexsight service"); 
+			if (!startedService) 
+				startService(new Intent(this, Nexsight.class));
+			startedService = true;
 			break;
 		case R.id.buttonStop:
-			Log.d(TAG, "onClick: stopping srvice");
-			stopService(new Intent(this, Nexsight.class));
+			Log.d(TAG, "stopping nexsight service");
+			if (startedService) 
+				stopService(new Intent(this, Nexsight.class));
+			startedService = false;
 			break;
 		}
 	}
