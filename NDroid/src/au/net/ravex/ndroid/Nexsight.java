@@ -3,6 +3,9 @@ package au.net.ravex.ndroid;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -49,23 +52,15 @@ public class Nexsight extends Service {
 		
 		//start activity loop
 		Log.i(TAG, "Start activity loop");
+		
 		shouldRun = true;
+		/*
 		try {
 			ar.startTakingPictures();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		/*
-		//FIXME find a more robust method
-		while(shouldRun) {
-			try {
-				ar.takePicture();
-				Thread.sleep(500);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+		*/
 		
 		loopTimer = new Timer();
 		loopTimer.scheduleAtFixedRate(new TimerTask() {
@@ -75,13 +70,12 @@ public class Nexsight extends Service {
 				loopStep();
 			}
 		}, 0, 10000); //WAIT 10 seconds
-		*/
-		
 	}
 	
 	public void loopStep() {
 		try {
 			ar.takePicture();
+			//FIXME track movement, sound and more
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -97,7 +91,6 @@ public class Nexsight extends Service {
 		try {
 			shouldRun = false;
 			ar.cleanup();
-			
 			if (loopTimer != null) 
 				loopTimer.cancel();
 		} catch (Exception e) {
