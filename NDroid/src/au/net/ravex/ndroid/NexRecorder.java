@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Timer;
 
 import android.app.Activity;
 import android.content.Context;
@@ -41,7 +42,7 @@ public class NexRecorder {
 	 * @param path
 	 * @return
 	 */
-	private String sanitizePath(String path, String ext) {
+	public static String sanitizePath(String path, String ext) {
 		if (!path.startsWith("/")) {
 			path = "/" + path;
 		}
@@ -78,7 +79,7 @@ public class NexRecorder {
 		// Create a randomized filename based on milliseconds since epoch
 		Log.d(TAG, "Creating file name");
 		long mills = new Date().getTime();
-		String path = sanitizePath(String.valueOf("nexsight/" + mills), "3gp");
+		String path = sanitizePath(String.valueOf("/nexsight/" + mills), "3gp");
 
 		// make sure the directory we plan to store the recording in exists
 		File directory = new File(path).getParentFile();
@@ -181,7 +182,12 @@ public class NexRecorder {
 						//"/sdcard/%d.jpg", System.currentTimeMillis())); // <9>
 				
 				long mills = new Date().getTime();
-				String path = sanitizePath(String.valueOf("nexsight/" + mills), "3gp");
+				String path = sanitizePath(String.valueOf("/nexsight/" + mills), "3gp");
+				File directory = new File(path).getParentFile();
+				if (!directory.exists() && !directory.mkdirs()) {
+					throw new IOException("Path to files could not be created.");
+				}
+				
 				outStream = new FileOutputStream(sanitizePath(String.valueOf("nexsight/" + mills), "jpg"));
 				outStream.write(data);
 				outStream.close();
