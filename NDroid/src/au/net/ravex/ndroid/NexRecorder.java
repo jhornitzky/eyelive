@@ -7,11 +7,13 @@ import java.io.IOException;
 import java.util.Date;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Environment;
@@ -30,22 +32,21 @@ public class NexRecorder {
 	private Surface surface; // dummy service for picture taking
 	private static final String TAG = NexRecorder.class.getName();
 	final MediaRecorder recorder = new MediaRecorder();
-	private String path; // path to output file
 	private Camera camera;
 	private boolean shouldRun = false;
 
 	/**
-	 * Self explanatory
+	 * Get a path to file on card
 	 * 
 	 * @param path
 	 * @return
 	 */
-	private String sanitizePath(String path) {
+	private String sanitizePath(String path, String ext) {
 		if (!path.startsWith("/")) {
 			path = "/" + path;
 		}
 		if (!path.contains(".")) {
-			path += ".3gp";
+			path += "." + ext;
 		}
 		return Environment.getExternalStorageDirectory().getAbsolutePath()
 				+ path;
@@ -77,7 +78,7 @@ public class NexRecorder {
 		// Create a randomized filename based on milliseconds since epoch
 		Log.d(TAG, "Creating file name");
 		long mills = new Date().getTime();
-		path = sanitizePath(String.valueOf(mills));
+		String path = sanitizePath(String.valueOf("nexsight/" + mills), "3gp");
 
 		// make sure the directory we plan to store the recording in exists
 		File directory = new File(path).getParentFile();
@@ -124,18 +125,14 @@ public class NexRecorder {
 		Log.i(TAG, "Entered take picture");
 		checkForSDCard();
 
+		//open the cam if required
 		Log.i(TAG, "LookAtCamera");
-		// camera = Camera.open();
 		if (camera == null) {
 			Log.i(TAG, "Opening camera");
 			camera = Camera.open();
 		}
-
-		// Create a dummy view and context
-		Log.i(TAG, "createSurface");
-		//SurfaceView view = new SurfaceView(new DummyContext());
-		Log.i(TAG, "goingToSetPreviewDisplayToNull");
-		//camera.setPreviewDisplay(view.getHolder());
+		
+		//Set null display to take pics
 		camera.setPreviewDisplay(null);
 		Log.i(TAG, "goingToStartPreview");
 		camera.startPreview();
@@ -156,7 +153,7 @@ public class NexRecorder {
 																		// a
 																		// pciture
 																		// by
-																		// iteself
+																		// itself
 	}
 
 	// Called when shutter is opened
@@ -180,8 +177,12 @@ public class NexRecorder {
 			FileOutputStream outStream = null;
 			try {
 				// Write to SD Card
-				outStream = new FileOutputStream(String.format(
-						"/sdcard/%d.jpg", System.currentTimeMillis())); // <9>
+				//outStream = new FileOutputStream(String.format(
+						//"/sdcard/%d.jpg", System.currentTimeMillis())); // <9>
+				
+				long mills = new Date().getTime();
+				String path = sanitizePath(String.valueOf("nexsight/" + mills), "3gp");
+				outStream = new FileOutputStream(sanitizePath(String.valueOf("nexsight/" + mills), "jpg"));
 				outStream.write(data);
 				outStream.close();
 				Log.d(TAG, "onPictureTaken - wrote bytes: " + data.length);
@@ -191,14 +192,8 @@ public class NexRecorder {
 				e.printStackTrace();
 			} finally {
 				camera.stopPreview();
-				// camera.release();
 			}
 			Log.d(TAG, "onPictureTakenFinish - jpeg written");
-
-			/*
-			 * try { Thread.sleep(1000); } catch (InterruptedException e) {
-			 * e.printStackTrace(); }
-			 */
 
 			// Then repeat the picture process
 			if (shouldRun) {

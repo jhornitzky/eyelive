@@ -10,13 +10,17 @@ import java.util.concurrent.ScheduledFuture;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.os.IBinder;
 import android.util.Log;
 
 public class Nexsight extends Service {
 	private static final String TAG = "NEXSIGHT";
 	private NexRecorder ar;
+	private AudioManager am;
 	private boolean shouldRun = false;
 	
 	private Timer loopTimer;
@@ -49,19 +53,13 @@ public class Nexsight extends Service {
 				Log.e(TAG, e.getMessage());
 			}
 		}
+
+		//audio mgr
+		am = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 		
 		//start activity loop
 		Log.i(TAG, "Start activity loop");
-		
 		shouldRun = true;
-		/*
-		try {
-			ar.startTakingPictures();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		*/
-		
 		loopTimer = new Timer();
 		loopTimer.scheduleAtFixedRate(new TimerTask() {
 			@Override
@@ -73,11 +71,15 @@ public class Nexsight extends Service {
 	}
 	
 	public void loopStep() {
-		try {
-			ar.takePicture();
-			//FIXME track movement, sound and more
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (shouldRun) { 
+			try {
+				//FIXME track movement, sound and more
+				ar.takePicture();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			Log.i(TAG, "Not should run");
 		}
 	}
 
@@ -90,9 +92,9 @@ public class Nexsight extends Service {
 	public void onDestroy() {
 		try {
 			shouldRun = false;
-			ar.cleanup();
 			if (loopTimer != null) 
 				loopTimer.cancel();
+			ar.cleanup();
 		} catch (Exception e) {
 			Log.e(TAG, e.getMessage());
 		}

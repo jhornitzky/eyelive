@@ -2,11 +2,25 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:gravity="center">
-<TextView  
+    android:layout_height="fill_parent"  android:layout_gravity="left" android:gravity="center|left">
+     <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:layout_weight="1">
+      <Button android:id="@+id/buttonStart" android:text="Start" android:textSize="30dip" android:height="100px" android:layout_width="120dip" android:layout_height="120dip"></Button>
+	  <Button android:text="Stop" android:id="@+id/buttonStop" android:textSize="30dip" android:layout_width="120dip" android:layout_height="120dip"></Button>
+    </LinearLayout>
+     <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:layout_weight="1">
+      <Button android:id="@+id/buttonTalk" android:text="Talk" android:textSize="30dip" android:layout_width="120dip" android:layout_height="120dip"></Button>
+	  <Button android:text="Go" android:id="@+id/buttonGo" android:textSize="30dip" android:layout_width="120dip" android:layout_height="120dip"></Button>
+    </LinearLayout>
+   <Button android:id="@+id/buttonView" android:text="View" android:textSize="15dip" android:layout_width="60dip" android:layout_height="60dip"></Button>  
+	<TextView  
     android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" android:text="NexSight recorder" android:gravity="center" android:textSize="20sp" android:padding="20dp"/>
-<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/buttonStart" android:text="Start"></Button>
-<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stop" android:id="@+id/buttonStop"></Button>
+    android:layout_height="wrap_content" android:text="NexSight" android:textSize="20sp" android:padding="20dp" android:gravity="center|right" android:id="@+id/textStat"/>
 </LinearLayout>
