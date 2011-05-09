@@ -30,10 +30,10 @@ import android.widget.ImageView;
  *         McCann</a>
  */
 public class NexRecorder {
-	private Surface surface; // dummy service for picture taking
 	private static final String TAG = NexRecorder.class.getName();
 	final MediaRecorder recorder = new MediaRecorder();
 	private Camera camera;
+	public AudioManager am;
 	private boolean shouldRun = false;
 
 	/**
@@ -146,13 +146,16 @@ public class NexRecorder {
 			Log.e(TAG, "Woken violently");
 			e.printStackTrace();
 		}
+		
+		//make quiet
+	    am.setStreamMute(AudioManager.STREAM_SYSTEM, true);
 
 		// take pic
 		Log.i(TAG, "Take pic");
 		camera.takePicture(shutterCallback, rawCallback, jpegCallback); // try
 																		// take
 																		// a
-																		// pciture
+																		// picture
 																		// by
 																		// itself
 	}
@@ -175,12 +178,13 @@ public class NexRecorder {
 	PictureCallback jpegCallback = new PictureCallback() { // <8>
 		public void onPictureTaken(byte[] data, Camera camera) {
 			Log.i(TAG, "onPictureTakenStart");
+			am.setStreamMute(AudioManager.STREAM_SYSTEM, false);//turn noises on 
+			
 			FileOutputStream outStream = null;
 			try {
 				// Write to SD Card
 				//outStream = new FileOutputStream(String.format(
 						//"/sdcard/%d.jpg", System.currentTimeMillis())); // <9>
-				
 				long mills = new Date().getTime();
 				String path = sanitizePath(String.valueOf("/nexsight/" + mills), "3gp");
 				File directory = new File(path).getParentFile();

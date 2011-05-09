@@ -16,17 +16,20 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import android.content.Intent;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 
 public class XDroid {
-	private static final String XNET_URL = "http://nexos.ravex.net.au/xi/handler.php";
+	private static final String XNET_URL = "http://nexos.ravex.net.au/xi/xnet/handler.php";
 	private static final String CALLER = "xdroid";
 	private static final String BOT_NAME = "TestBot"; //FIXME xnet
 	
-	public static String getXnetResponse(Intent data) {
+	public static String getXnetResponse(Intent data) throws JSONException {
 		// Fill the list view with the strings the recognizer thought it
 		// could have heard
 		ArrayList<String> matches = data
@@ -47,6 +50,8 @@ public class XDroid {
 		nameValuePairs.add(new BasicNameValuePair("input", toSend));      
 		nameValuePairs.add(new BasicNameValuePair("caller", CALLER)); 
 		
+		Log.d("XNET SEND",toSend);
+		
 		try {
 			httpost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 			Log.d("HTTP POST", httpost.getURI().toString());
@@ -59,9 +64,9 @@ public class XDroid {
 				
 				HttpEntity entity = response.getEntity();
 				String toTalk = convertStreamToString(entity.getContent());
-				ArrayList<String> array = new ArrayList<String>();
-				array.add(toTalk);
-				Log.d("XNET RESPONSE",toTalk);
+				JSONObject object = (JSONObject) new JSONTokener(toTalk).nextValue();
+				toTalk = object.getString("content");
+				Log.d("XNET PARSED RESPONSE",toTalk);
 				entity.consumeContent();
 				return toTalk;
 			} catch (ClientProtocolException e) {

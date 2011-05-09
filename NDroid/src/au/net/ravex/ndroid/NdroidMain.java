@@ -1,25 +1,21 @@
 package au.net.ravex.ndroid;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.json.JSONException;
 
 import android.app.Activity;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.media.AudioManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
@@ -27,13 +23,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.View.OnClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.Gallery;
 import android.widget.ImageView;
-import android.widget.Spinner;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class NdroidMain extends Activity implements OnClickListener,
@@ -42,10 +37,12 @@ public class NdroidMain extends Activity implements OnClickListener,
 	boolean startedService = false;
 	private Timer loopTimer;
 	private ImageAdapter iAdapt;
+	private Editor edit;
 
-	Button buttonStart, buttonStop, buttonTalk, buttonGo;
+	Button buttonStart, buttonStop, buttonTalk, buttonGo, buttonGrid;
 	TextView texty;
 	Gallery g;
+	ProgressBar pg;
 
 	private static final String KEY_STATE = "NS_STARTED";
 	private static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
@@ -57,8 +54,8 @@ public class NdroidMain extends Activity implements OnClickListener,
 	/** called after init **/
 	@Override
 	public void onInit(int status) {
-		tts.setLanguage(Locale.US);
-		tts.speak(HELLO, TextToSpeech.QUEUE_FLUSH, null);
+		//tts.setLanguage(Locale.US);
+		//tts.speak(HELLO, TextToSpeech.QUEUE_FLUSH, null);
 	}
 
 	/** Called when the activity is first created. */
@@ -66,21 +63,23 @@ public class NdroidMain extends Activity implements OnClickListener,
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.main);
 
 		Log.d(TAG, "Created view... binding buttons");
 
 		buttonStart = (Button) findViewById(R.id.buttonStart);
 		buttonStop = (Button) findViewById(R.id.buttonStop);
-		buttonTalk = (Button) findViewById(R.id.buttonTalk);
+		//buttonTalk = (Button) findViewById(R.id.buttonTalk);
 		buttonGo = (Button) findViewById(R.id.buttonGo);
+		buttonGrid = (Button) findViewById(R.id.buttonGrid);
 		texty = (TextView) findViewById(R.id.textStat);
+		pg = (ProgressBar) findViewById(R.id.pg);
 
 		buttonStart.setOnClickListener(this);
 		buttonStop.setOnClickListener(this);
 		buttonGo.setOnClickListener(this);
+		buttonGrid.setOnClickListener(this);
 
 		// Setup tts
 		Intent checkIntent = new Intent();
@@ -89,18 +88,15 @@ public class NdroidMain extends Activity implements OnClickListener,
 
 		// get prefs and setup
 		prefs = getPreferences(MODE_WORLD_WRITEABLE);
-
-		if (prefs.getBoolean(KEY_STATE, false))
-			texty.setText("NexSight running");
-		else
-			texty.setText("NexSight resting");
+		updateStatus();
 
 		// gallery
 		g = (Gallery) findViewById(R.id.galleryView);
-		iAdapt = new ImageAdapter(this, grabFiles());
+		iAdapt = new ImageAdapter(this, NdroidHelper.grabFiles());
 		g.setAdapter(iAdapt);
 
 		// Check to see if a recognition activity is present
+		/*
 		PackageManager pm = getPackageManager();
 		List activities = pm.queryIntentActivities(new Intent(
 				RecognizerIntent.ACTION_RECOGNIZE_SPEECH), 0);
@@ -111,8 +107,9 @@ public class NdroidMain extends Activity implements OnClickListener,
 			buttonTalk.setEnabled(false);
 			buttonTalk.setText("Recognizer not present");
 		}
+		*/
 
-		// refresh imgs periodically
+		// refresh imgs periodically ///FIXME actually refresh vview every now and then
 		loopTimer = new Timer();
 		loopTimer.scheduleAtFixedRate(new TimerTask() {
 			@Override
@@ -120,44 +117,15 @@ public class NdroidMain extends Activity implements OnClickListener,
 				Log.i(TAG, "Refreshing view");
 				step();
 			}
-		}, 0, 15000);
+		}, 0, 30*1000);
+		
 	}
 
 	public void step() {
-		iAdapt.setList(grabFiles());
-		g.refreshDrawableState();
-		g.forceLayout();
-	}
-
-	public File[] flipArray(File[] b) {
-		for (int left = 0, right = b.length - 1; left < right; left++, right--) {
-			// exchange the first and last
-			File temp = b[left];
-			b[left] = b[right];
-			b[right] = temp;
-		}
-		return b;
-	}
-
-	public List grabFiles() {
-		List<String> tFileList = new ArrayList<String>();
-		String p = Environment.getExternalStorageDirectory().getAbsolutePath()
-				+ "/nexsight/";
-		File f = new File(p);
-
-		Log.d(TAG, "Read from " + p);
-		File[] files = f.listFiles();
-		files = flipArray(files);
-		if (files != null) {
-			for (int i = 0; i < files.length; i++) {
-				File file = files[i];
-				tFileList.add(file.getPath());
-			}
-		} else {
-			Log.w(TAG, "nothing found in " + p);
-		}
-
-		return tFileList;
+		iAdapt.setList(NdroidHelper.grabFiles());
+		//g.refreshDrawableState();
+		//g.forceLayout();
+		g.postInvalidate();
 	}
 
 	public class ImageAdapter extends BaseAdapter {
@@ -187,17 +155,29 @@ public class NdroidMain extends Activity implements OnClickListener,
 		}
 
 		public View getView(int position, View convertView, ViewGroup parent) {
+			Bitmap bmap = NdroidHelper.obtainPreviewMap(files.get(position).toString(), 4);
 			try {
 				ImageView i = new ImageView(mContext);
-				i.setImageDrawable(Drawable.createFromPath(files.get(position)
-						.toString()));
-				//i.setLayoutParams(new Gallery.LayoutParams(150, 100));
+				i.setImageBitmap(bmap);
 				i.setScaleType(ImageView.ScaleType.FIT_XY);
 				return i;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			return null;
+			
+		}
+	}
+	
+	private void updateStatus() {
+		if (prefs.getBoolean(KEY_STATE, false)) {
+			texty.setText("recording to /sdcard/nexsight");
+			pg.setVisibility(View.VISIBLE);
+			texty.setTextColor(Color.WHITE);
+		} else {
+			texty.setText("inactive");
+			pg.setVisibility(View.INVISIBLE);
+			texty.setTextColor(Color.GRAY);
 		}
 	}
 
@@ -209,23 +189,31 @@ public class NdroidMain extends Activity implements OnClickListener,
 		switch (src.getId()) {
 		case R.id.buttonStart:
 			Log.d(TAG, "starting nexsight service");
-			prefs.edit().putBoolean(KEY_STATE, true);
-			texty.setText("NexSight running");
+			edit = prefs.edit();
+			edit.putBoolean(KEY_STATE, true);
+			edit.commit();
+			updateStatus();
 			startService(new Intent(this, Nexsight.class));
 			break;
 		case R.id.buttonStop:
 			Log.d(TAG, "stopping nexsight service");
-			prefs.edit().putBoolean(KEY_STATE, false);
-			texty.setText("NexSight resting");
+			edit = prefs.edit();
+			edit.putBoolean(KEY_STATE, false);
+			edit.commit();
+			updateStatus();
 			stopService(new Intent(this, Nexsight.class));
 			break;
-		case R.id.buttonTalk:
-			startVoiceRecognitionActivity();
-			break;
+		//case R.id.buttonTalk:
+			//startVoiceRecognitionActivity();
+			//break;
 		case R.id.buttonGo:
 			Intent myIntent = new Intent(Intent.ACTION_VIEW,
 					Uri.parse("http://nexos.ravex.net.au"));
 			startActivity(myIntent);
+			break;
+		case R.id.buttonGrid:
+			Intent myIntent2 = new Intent(getApplicationContext(), NdroidImages.class);
+            startActivityForResult(myIntent2, 0);
 			break;
 		}
 	}
@@ -248,8 +236,14 @@ public class NdroidMain extends Activity implements OnClickListener,
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == VOICE_RECOGNITION_REQUEST_CODE
 				&& resultCode == RESULT_OK) {
-			String toTalk = XDroid.getXnetResponse(data);
-			tts.speak(toTalk, TextToSpeech.QUEUE_FLUSH, null);
+			try {
+				String toTalk = XDroid.getXnetResponse(data);
+				Log.i(TAG, "going to speak: " + toTalk);
+				tts.speak(toTalk, TextToSpeech.QUEUE_FLUSH, null);
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		} else if (requestCode == TTS_REQUEST_CODE) {
 			if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
 				// success, create the TTS instance
@@ -268,7 +262,7 @@ public class NdroidMain extends Activity implements OnClickListener,
 
 	@Override
 	protected void onDestroy() {
-		tts.shutdown();
+		//tts.shutdown();
 		loopTimer.cancel();
 		super.onDestroy();
 	}
