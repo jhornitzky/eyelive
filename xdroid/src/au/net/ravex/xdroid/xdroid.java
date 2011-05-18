@@ -78,7 +78,6 @@ public class xdroid extends Activity implements
 			speakButton.setEnabled(false);
 			speakButton.setText("Recognizer not present");
 		}
-
 	}
 
 	public void onInit(int status) {
