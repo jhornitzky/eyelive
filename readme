@@ -1,0 +1,14 @@
+A collection of mobile (currently android) experiments for augmented cognition/reality.
+
+Currently app aims at recording photos, audio, location and accelerometer data to later analyze and sync with server/external services.
+
+TODO:
+1. Get onclick modal dialog working with the imageView.
+2. Record audio data alongside images.
+3. Record GPS data.
+4. Display GPS data for each day on a map screen.
+5. Record accelerometer data.
+6. Analyze and display the day's accelerometer data to detemerine number of steps taken and any other useful stats.
+7. A settings screen to customize what is recorded (photo,audio,gps,accelerometer) as well as interval.
+8. An active quests section.
+9. A web system to anylze and display data on a larger screen.
